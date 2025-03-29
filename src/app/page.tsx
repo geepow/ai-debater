@@ -18,7 +18,7 @@ export default function DebateApp() {
     "Is artificial intelligence a net positive for humanity?",
     "Should college education be free for everyone?",
     "Does social media do more harm than good to society?",
-    "Should humans prioritize space exploration over solving Earth's problems?",
+    "Should humans prioritize space exploration over solving Earth&apos;s problems?",
     "Is universal basic income a viable solution for future economies?"
   ];
 
@@ -41,7 +41,7 @@ export default function DebateApp() {
       try {
         messages.push({
           role: 'user',
-          content: `${turn === 'A' ? 'Support this view:' : 'Critique this view:'} ${currentPrompt}`
+          content: `${turn === "A" ? "Support this view:" : "Critique this view:"} ${currentPrompt}`
         });
 
         const response = await fetch('/api/debate', {
@@ -95,7 +95,10 @@ export default function DebateApp() {
         <h1 className="text-2xl md:text-3xl font-bold text-center mb-6">AI Debater</h1>
         
         <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-6">
-          <p className="text-sm text-gray-700 mb-4">Enter a debate topic or press 'Sample Topic' to get a random topic.</p>
+          <p className="text-sm text-gray-600 mb-4">
+            Enter your debate topic below or press &quot;Sample Topic&quot; for a random selection.
+          </p>
+
           <div className="mb-4">
             <label htmlFor="prompt" className="block text-sm font-medium text-gray-800 mb-2">
               Debate Topic
