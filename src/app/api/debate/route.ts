@@ -1,29 +1,44 @@
 import { NextResponse } from 'next/server';
 
+// Define proper TypeScript interfaces
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant';
+  content: string;
+}
+
+interface RequestBody {
+  personality: 'supportive' | 'critical';
+  messages: ChatMessage[];
+  model?: string;
+}
+
 export async function POST(request: Request) {
   try {
-    const { messages, personality } = await request.json();
+    const requestBody: RequestBody = await request.json();
     
-    const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://ai-debater-gee-pows-projects.vercel.app/', // Replace with your domain
+        'HTTP-Referer': 'https://yourdomain.com', // Replace with your actual domain
         'X-Title': 'AI Debate App'
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat:free",
-        messages: [{
-          role: "system",
-          content: `You are debating with a ${personality} perspective. Respond concisely.`
-        }, ...messages]
+        model: requestBody.model || "deepseek/deepseek-chat:free",
+        messages: [
+          {
+            role: "system",
+            content: `You are debating with a ${requestBody.personality} perspective. Respond concisely.`
+          },
+          ...requestBody.messages
+        ]
       })
     });
 
-    const data = await openRouterResponse.json();
+    const data = await response.json();
     
-    if (!openRouterResponse.ok) {
+    if (!response.ok) {
       throw new Error(data.error?.message || 'OpenRouter API error');
     }
 
@@ -32,10 +47,11 @@ export async function POST(request: Request) {
       response: data.choices[0]?.message?.content
     });
     
-  } catch (error: any) {
-    console.error('API Route Error:', error);
+  } catch (error: unknown) { // Note: Using 'unknown' instead of 'any'
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('API Route Error:', errorMessage);
     return NextResponse.json(
-      { success: false, error: error.message },
+      { success: false, error: errorMessage },
       { status: 500 }
     );
   }
