@@ -21,7 +21,7 @@ export async function POST(request: Request) {
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
         'Content-Type': 'application/json',
-        'HTTP-Referer': 'https://yourdomain.com', // Replace with your actual domain
+        'HTTP-Referer': 'https://ai-debater-gee-pows-projects.vercel.app', // Replace with your actual domain
         'X-Title': 'AI Debate App'
       },
       body: JSON.stringify({
