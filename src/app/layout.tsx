@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
+import Link from 'next/link'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -20,12 +21,12 @@ export default function RootLayout({
         <div className="min-h-screen flex flex-col">
           <header className="bg-indigo-700 text-white shadow-md">
             <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-              <a href="/" className="flex items-center space-x-2">
+              <Link href="/" className="flex items-center space-x-2">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <span className="text-xl font-bold">AI Debate Arena</span>
-              </a>
+              </Link>
               <nav>
                 <ul className="flex space-x-6">
                   <li><a href="/debater" className="hover:text-indigo-200 transition">Debate</a></li>
@@ -43,9 +44,9 @@ export default function RootLayout({
             <div className="container mx-auto px-4 text-center">
               <p>© {new Date().getFullYear()} AI Debate Arena. All rights reserved.</p>
               <div className="mt-2 flex justify-center space-x-4">
-                <a href="#" className="hover:text-indigo-300 transition">Terms</a>
-                <a href="#" className="hover:text-indigo-300 transition">Privacy</a>
-                <a href="#" className="hover:text-indigo-300 transition">Contact</a>
+                <Link href="#" className="hover:text-indigo-300 transition">Terms</Link>
+                <Link href="#" className="hover:text-indigo-300 transition">Privacy</Link>
+                <Link href="#" className="hover:text-indigo-300 transition">Contact</Link>
               </div>
             </div>
           </footer>
