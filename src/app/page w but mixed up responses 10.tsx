@@ -5,8 +5,8 @@ type Speaker = 'A' | 'B';
 type DebateEntry = {
   speaker: Speaker;
   text: string;
+  prompt: string;
   isSurrender?: boolean;
-  round: number;
 };
 
 export default function DebateApp() {
@@ -16,11 +16,11 @@ export default function DebateApp() {
   const [debateLog, setDebateLog] = useState<DebateEntry[]>([]);
 
   const samplePrompts = [
-    "Should universal basic income be implemented worldwide?",
     "Is artificial intelligence a net positive for humanity?",
     "Should college education be free for everyone?",
     "Does social media do more harm than good to society?",
-    "Should humans prioritize space exploration over solving Earth's problems?"
+    "Should humans prioritize space exploration over solving Earth's problems?",
+    "Is universal basic income a viable solution for future economies?"
   ];
 
   const generateSamplePrompt = () => {
@@ -34,48 +34,37 @@ export default function DebateApp() {
     setIsDebating(true);
     setDebateLog([]);
     
+    let currentPrompt = prompt;
     const debateEntries: DebateEntry[] = [];
     let speakerFlag: Speaker = 'A';
     let opponentSurrendered = false;
+    let errorOccurred = false;
 
     try {
-      for (let round = 1; round <= responseCount && !opponentSurrendered; round++) {
-        for (let turn = 0; turn < 2 && !opponentSurrendered; turn++) {
+      // Each round consists of two turns (A and B)
+      for (let round = 1; round <= responseCount && !opponentSurrendered && !errorOccurred; round++) {
+        for (let turn = 0; turn < 2 && !opponentSurrendered && !errorOccurred; turn++) {
           try {
-            // Get all previous arguments from both sides
-            const opponentArguments = debateEntries
-              .filter(entry => entry.speaker !== speakerFlag)
-              .map(entry => entry.text);
-            
-            const ownArguments = debateEntries
-              .filter(entry => entry.speaker === speakerFlag)
-              .map(entry => entry.text);
-
-            const lastOpponentEntry = debateEntries
-              .filter(entry => entry.speaker !== speakerFlag)
-              .slice(-1)[0];
-
             const response = await fetch('/api/debate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 currentSpeaker: speakerFlag,
                 debateTopic: prompt,
-                debateHistory: debateEntries.map(e => ({
-                  speaker: e.speaker,
-                  text: e.text
+                messages: debateEntries.map(entry => ({
+                  role: 'assistant',
+                  content: entry.text
                 })),
+                debateHistory: debateEntries.map(e => e.text),
                 currentRound: round,
                 totalRounds: responseCount,
-                lastOpponentText: lastOpponentEntry?.text || '',
-                fullOpponentArguments: opponentArguments,
-                fullOwnArguments: ownArguments
+                opponentSurrendered: opponentSurrendered
               }),
-              signal: AbortSignal.timeout(25000) // 25s timeout per request
+              signal: AbortSignal.timeout(20000) // 20s timeout per request
             });
 
             if (!response.ok) {
-              throw new Error(`Request failed with status ${response.status}`);
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
@@ -83,41 +72,38 @@ export default function DebateApp() {
             const newEntry: DebateEntry = {
               speaker: speakerFlag,
               text: data.response,
-              isSurrender: data.isSurrender,
-              round: round
+              prompt: currentPrompt,
+              isSurrender: data.isSurrender
             };
 
             debateEntries.push(newEntry);
             setDebateLog([...debateEntries]);
             
+            // If someone surrenders, end the debate immediately
             if (data.isSurrender) {
               opponentSurrendered = true;
               break;
             }
 
+            currentPrompt = data.response;
             speakerFlag = speakerFlag === 'A' ? 'B' : 'A'; // Alternate speakers
+            
           } catch (error) {
             console.error('Debate error:', error);
             debateEntries.push({
               speaker: speakerFlag,
-              text: 'Response failed. Please try again.',
-              isSurrender: true,
-              round: round
+              text: 'Response timed out or failed.',
+              prompt: currentPrompt,
+              isSurrender: true
             });
             setDebateLog([...debateEntries]);
-            opponentSurrendered = true;
+            errorOccurred = true;
           }
         }
       }
     } finally {
       setIsDebating(false);
     }
-  };
-
-  const resetDebate = () => {
-    setDebateLog([]);
-    setPrompt('');
-    setResponseCount(3);
   };
 
   return (
@@ -138,51 +124,31 @@ export default function DebateApp() {
                 onChange={(e) => setPrompt(e.target.value)}
                 className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Enter a debate topic..."
-                disabled={isDebating}
               />
               <button
                 onClick={generateSamplePrompt}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition"
-                disabled={isDebating}
               >
                 Sample Topic
               </button>
             </div>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label htmlFor="rounds" className="block text-sm font-medium text-gray-700 mb-2">
-                Number of Rounds (1-5)
-              </label>
-              <input
-                type="number"
-                id="rounds"
-                min="1"
-                max="5"
-                value={responseCount}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value);
-                  if (!isNaN(value)) {
-                    setResponseCount(Math.max(1, Math.min(5, value)));
-                  }
-                }}
-                className="w-full p-2 border border-gray-300 rounded-md"
-                disabled={isDebating}
-              />
-            </div>
-            
-            <div className="flex items-end">
-              <button
-                onClick={resetDebate}
-                className="w-full py-2 px-4 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition"
-                disabled={isDebating}
-              >
-                Reset Debate
-              </button>
-            </div>
+          <div className="mb-4">
+            <label htmlFor="responses" className="block text-sm font-medium text-gray-700 mb-2">
+              Number of Rounds (1-5)
+            </label>
+            <input
+              type="number"
+              id="responses"
+              min="1"
+              max="5"
+              value={responseCount}
+              onChange={(e) => setResponseCount(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
+              className="w-full p-2 border border-gray-300 rounded-md"
+            />
           </div>
-  
+
           <button
             onClick={startDebate}
             disabled={isDebating || !prompt}
@@ -206,19 +172,19 @@ export default function DebateApp() {
           <div className="mt-6 space-y-4">
             {debateLog.map((entry, index) => (
               <div 
-                key={index}
+                key={index} 
                 className={`p-4 rounded-lg border-l-4 ${
                   entry.isSurrender ? 'border-yellow-500 bg-yellow-50' :
                   entry.speaker === 'A' ? 'border-blue-500 bg-blue-50' : 'border-red-500 bg-red-50'
                 }`}
               >
-                <div className="flex justify-between items-start mb-1">
-                  <span className="font-medium text-sm">
+                <div className="flex justify-between items-start">
+                  <p className="font-medium text-sm mb-1">
                     {entry.speaker === 'A' ? 'PRO Side' : 'CON Side'}
                     {entry.isSurrender && ' (Conceded)'}
-                  </span>
+                  </p>
                   <span className="text-xs text-gray-500">
-                    Round {entry.round} of {responseCount}
+                    Round {Math.ceil((index + 1) / 2)} of {responseCount}
                   </span>
                 </div>
                 <p className="whitespace-pre-wrap">{entry.text}</p>
