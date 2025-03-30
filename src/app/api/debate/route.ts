@@ -169,7 +169,9 @@ export async function POST(request: Request) {
     });
 
   } catch (error: unknown) {
-    console.error('Debate error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('Debate error:', errorMessage);
+  
     return NextResponse.json({
       success: false,
       response: isPro 
