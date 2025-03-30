@@ -1,13 +1,12 @@
 import { NextResponse } from 'next/server';
-
 // List of available free models with fallback priority
-const FREE_MODELS = [
-  "meta-llama/llama-3-70b-instruct",  // Free on OpenRouter
-  "google/gemma-7b-it",                // Free lightweight model
-  "mistralai/mistral-7b-instruct",     // Good fallback option
-  "anthropic/claude-3-haiku",          // Free tier available
-  "gryphe/mythomax-l2-13b"             // Another free option
-];
+// const FREE_MODELS = [
+//   "meta-llama/llama-3-70b-instruct",  // Free on OpenRouter
+//   "google/gemma-7b-it",                // Free lightweight model
+//   "mistralai/mistral-7b-instruct",     // Good fallback option
+//   "anthropic/claude-3-haiku",          // Free tier available
+//   "gryphe/mythomax-l2-13b"             // Another free option
+// ];
 
 interface DebateRequest {
   currentSpeaker: 'A' | 'B';
@@ -116,8 +115,7 @@ export async function POST(request: Request) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-    //    model: "anthropic/claude-3-sonnet", 
-        model: "deepseek/deepseek-chat-v3-0324", 
+        model: "deepseek/deepseek-chat-v3-0324",
         messages: [{
           role: "system",
           content: getSystemPrompt()
