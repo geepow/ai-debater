@@ -1,3 +1,4 @@
+//page.tsx
 'use client';
 import { useState } from 'react';
 
@@ -37,59 +38,47 @@ export default function DebateApp() {
     let currentPrompt = prompt;
     const debateEntries: DebateEntry[] = [];
     let speakerFlag: Speaker = 'A';
-    let opponentSurrendered = false;
-    let errorOccurred = false;
 
-    try {
-      // Each round consists of two turns (A and B)
-      for (let round = 1; round <= responseCount && !opponentSurrendered && !errorOccurred; round++) {
-        for (let turn = 0; turn < 2 && !opponentSurrendered && !errorOccurred; turn++) {
+    for (let i = 0; i < responseCount; i++) {
+      for (let j = 0; j < 2; j++) { // Ensures each round has two turns (A & B)
+        let responseReceived = false;
+        
+        while (!responseReceived) {
           try {
+            const messages = debateEntries.flatMap((entry) => [
+              { role: 'user', content: `${entry.speaker === 'A' ? 'Support:' : 'Critique:'} ${entry.prompt}` },
+              { role: 'assistant', content: entry.text }
+            ]);
+
+            messages.push({ role: 'user', content: `${speakerFlag === 'A' ? 'Support this:' : 'Critique this:'} ${currentPrompt}` });
+
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+
             const response = await fetch('/api/debate', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
+              signal: controller.signal,
               body: JSON.stringify({
                 currentSpeaker: speakerFlag,
                 debateTopic: prompt,
-                messages: debateEntries.map(entry => ({
-                  role: 'assistant',
-                  content: entry.text
-                })),
-                debateHistory: debateEntries.map(e => e.text),
-                currentRound: round,
-                totalRounds: responseCount,
-                opponentSurrendered: opponentSurrendered
-              }),
-              signal: AbortSignal.timeout(20000) // 20s timeout per request
+                messages,
+                debateHistory: debateEntries.map(e => `${e.speaker === 'A' ? '[PRO]' : '[CON]'} ${e.text}`)
+              })
             });
+            
+            clearTimeout(timeoutId);
 
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
+            if (!response.ok) throw new Error('Debate failed');
 
             const data = await response.json();
-            
-            const newEntry: DebateEntry = {
-              speaker: speakerFlag,
-              text: data.response,
-              prompt: currentPrompt,
-              isSurrender: data.isSurrender
-            };
+            if (!data.success) throw new Error(data.error || 'Debate failed');
 
-            debateEntries.push(newEntry);
+            debateEntries.push({ speaker: speakerFlag, text: data.response, prompt: currentPrompt });
             setDebateLog([...debateEntries]);
-            
-            // If someone surrenders, end the debate immediately
-            if (data.isSurrender) {
-              opponentSurrendered = true;
-              break;
-            }
-
             currentPrompt = data.response;
-            speakerFlag = speakerFlag === 'A' ? 'B' : 'A'; // Alternate speakers
-            
+            responseReceived = true;
           } catch (error) {
-            console.error('Debate error:', error);
             debateEntries.push({
               speaker: speakerFlag,
               text: 'Response timed out or failed.',
@@ -97,13 +86,15 @@ export default function DebateApp() {
               isSurrender: true
             });
             setDebateLog([...debateEntries]);
-            errorOccurred = true;
+            responseReceived = true;
           }
         }
+
+        speakerFlag = speakerFlag === 'A' ? 'B' : 'A';
       }
-    } finally {
-      setIsDebating(false);
     }
+
+    setIsDebating(false);
   };
 
   return (
@@ -134,21 +125,6 @@ export default function DebateApp() {
             </div>
           </div>
           
-          <div className="mb-4">
-            <label htmlFor="responses" className="block text-sm font-medium text-gray-700 mb-2">
-              Number of Rounds (1-5)
-            </label>
-            <input
-              type="number"
-              id="responses"
-              min="1"
-              max="5"
-              value={responseCount}
-              onChange={(e) => setResponseCount(Math.min(5, Math.max(1, parseInt(e.target.value) || 1)))}
-              className="w-full p-2 border border-gray-300 rounded-md"
-            />
-          </div>
-
           <button
             onClick={startDebate}
             disabled={isDebating || !prompt}
@@ -156,37 +132,21 @@ export default function DebateApp() {
               isDebating ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             } transition flex justify-center items-center`}
           >
-            {isDebating ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Debating...
-              </>
-            ) : 'Start Debate'}
+            {isDebating ? 'Debating...' : 'Start Debate'}
           </button>
         </div>
         
         {debateLog.length > 0 && (
           <div className="mt-6 space-y-4">
             {debateLog.map((entry, index) => (
-              <div 
-                key={index} 
-                className={`p-4 rounded-lg border-l-4 ${
-                  entry.isSurrender ? 'border-yellow-500 bg-yellow-50' :
-                  entry.speaker === 'A' ? 'border-blue-500 bg-blue-50' : 'border-red-500 bg-red-50'
-                }`}
-              >
-                <div className="flex justify-between items-start">
-                  <p className="font-medium text-sm mb-1">
-                    {entry.speaker === 'A' ? 'PRO Side' : 'CON Side'}
-                    {entry.isSurrender && ' (Conceded)'}
-                  </p>
-                  <span className="text-xs text-gray-500">
-                    Round {Math.ceil((index + 1) / 2)} of {responseCount}
-                  </span>
-                </div>
+              <div key={index} className={`p-4 rounded-lg border-l-4 ${
+                entry.isSurrender ? 'border-yellow-500 bg-yellow-50' :
+                entry.speaker === 'A' ? 'border-blue-500 bg-blue-50' : 'border-red-500 bg-red-50'
+              }`}>
+                <p className="font-medium text-sm mb-1">
+                  {entry.speaker === 'A' ? 'PRO Side' : 'CON Side'}
+                  {entry.isSurrender && ' (Conceded)'}
+                </p>
                 <p className="whitespace-pre-wrap">{entry.text}</p>
               </div>
             ))}
