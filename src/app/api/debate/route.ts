@@ -40,10 +40,10 @@ export async function POST(request: Request) {
   const {
     currentSpeaker,
     debateTopic,
-    debateHistory = [],
+  //  debateHistory = [],
     currentRound = 1,
     totalRounds = 3,
-    lastOpponentText = '',
+  //  lastOpponentText = '',
     fullOpponentArguments = [],
     fullOwnArguments = []
   } = requestData;
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
       role: position
     });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Debate error:', error);
     return NextResponse.json({
       success: false,
