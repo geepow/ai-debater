@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     if (!requestData.debateTopic || !requestData.currentSpeaker) {
       throw new Error('Missing required fields');
     }
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json(
       { error: 'Invalid request format' },
       { status: 400 }
