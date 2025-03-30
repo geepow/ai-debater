@@ -306,7 +306,7 @@ export default function DebateApp() {
               )}
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h3 className="font-medium text-gray-800 mb-2">Judge`&apos;`s Commentary:</h3>
+              <h3 className="font-medium text-gray-800 mb-2">Judge&apos;s Commentary:</h3>
               <p className="whitespace-pre-wrap text-gray-700">{debateResult.commentary}</p>
             </div>
           </div>

@@ -134,7 +134,7 @@ export default function PrintDebatePage() {
               </div>
             </div>
             <div>
-              <h3 className="font-medium text-gray-800 mb-2">Judge's Commentary:</h3>
+              <h3 className="font-medium text-gray-800 mb-2">Judge&apos;s Commentary:</h3>
               <div className="bg-white p-4 rounded-lg border border-gray-200">
                 <p className="whitespace-pre-wrap text-gray-700">{debateData.debateResult.commentary}</p>
               </div>

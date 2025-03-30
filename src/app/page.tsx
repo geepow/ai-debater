@@ -49,15 +49,15 @@ export default function Home() {
           <h2 className="text-xl font-semibold text-indigo-700 mb-4">Recent Debates</h2>
           <div className="space-y-4">
             <div className="border-l-4 border-indigo-500 pl-4">
-              <h3 className="font-medium">"Should we colonize Mars?"</h3>
+              <h3 className="font-medium">&quot;Should we colonize Mars?&quot;</h3>
               <p className="text-sm text-gray-500">3 rounds · 5 minutes ago</p>
             </div>
             <div className="border-l-4 border-indigo-500 pl-4">
-              <h3 className="font-medium">"Is remote work better than office work?"</h3>
+              <h3 className="font-medium">&quot;Is remote work better than office work?&quot;</h3>
               <p className="text-sm text-gray-500">5 rounds · 1 hour ago</p>
             </div>
             <div className="border-l-4 border-indigo-500 pl-4">
-              <h3 className="font-medium">"Should voting be mandatory?"</h3>
+              <h3 className="font-medium">&quot;Should voting be mandatory?&quot;</h3>
               <p className="text-sm text-gray-500">4 rounds · 3 hours ago</p>
             </div>
           </div>
