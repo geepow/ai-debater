@@ -113,7 +113,8 @@ export async function POST(request: Request) {
       signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+         'HTTP-Referer': 'https://ai-debater-gee-pows-projects.vercel.app/'
       },
       body: JSON.stringify({
         model: "deepseek/deepseek-chat-v3-0324",
