@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 
 interface PrintDebateButtonProps {
   debateLog: {
@@ -28,7 +27,6 @@ export default function PrintDebateButton({
   responseCount,
   debateResult
 }: PrintDebateButtonProps) {
-  const router = useRouter();
 
   const generatePrintView = () => {
     if (!debateLog.length) return;
