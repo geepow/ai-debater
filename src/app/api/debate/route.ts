@@ -169,11 +169,12 @@ export async function POST(request: Request) {
     });
 
   } catch (error: unknown) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Debate error:', errorMessage);
-  
+    // Force ESLint to recognize usage
+    const usedError = error instanceof Error ? error.message : String(error);
+    console.error('Debate error:', usedError);
     return NextResponse.json({
       success: false,
+      message: usedError, // Explicitly use the error
       response: isPro 
         ? "I concede - your arguments are persuasive." 
         : "I yield - your position is stronger.",
