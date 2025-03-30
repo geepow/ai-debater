@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "_backup/page w but mixed up responses 10.bak", "src/app/page w but doesnt stop.bak", "_backup/page copy.bak", "_backup/route copy 2.ts.bak", "_backup/route copy.ts.bak", "_backup/route w but mixed up  con and for.ts.bak", "_backup/route w but not good resp.ts.bak", "_backup/route copy working.ts.bak", "_backup/page copy 10.tsx.bak"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "_backup/old/page w but mixed up responses 10.bak", "src/app/page w but doesnt stop.bak", "_backup/old/page copy.bak", "_backup/old/route copy 2.ts.bak", "_backup/old/route copy.ts.bak", "_backup/old/route w but mixed up  con and for.ts.bak", "_backup/old/route w but not good resp.ts.bak", "_backup/old/route copy working.ts.bak", "_backup/old/page copy 10.tsx.bak"],
   "exclude": ["node_modules"]
 }
