@@ -22,6 +22,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "src/app/page w but mixed up responses 10.bak", "src/app/page w but doesnt stop.bak", "src/app/page copy.bak", "src/app/api/debate/route copy 2.ts.bak", "src/app/api/debate/route copy.ts.bak", "src/app/api/debate/route w but mixed up  con and for.ts.bak", "src/app/api/debate/route w but not good resp.ts.bak", "src/app/api/debate/route copy working.ts.bak"],
   "exclude": ["node_modules"]
 }
