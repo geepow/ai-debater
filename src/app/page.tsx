@@ -123,11 +123,11 @@ export default function DebateApp() {
   return (
     <div className="min-h-screen bg-gray-100 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <h1 className="text-2xl md:text-3xl font-bold text-center mb-6">AI Debate Arena</h1>
+        <h1 className="text-2xl md:text-3xl font-bold text-center mb-6 text-gray-800">AI Debate Arena</h1>
         
         <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-6">
           <div className="mb-4">
-            <label htmlFor="prompt" className="block text-sm font-medium text-gray-700 mb-2">
+            <label htmlFor="prompt" className="block text-sm font-medium text-gray-800 mb-2">
               Debate Topic
             </label>
             <div className="flex flex-col md:flex-row gap-2">
@@ -136,7 +136,7 @@ export default function DebateApp() {
                 id="prompt"
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
                 placeholder="Enter a debate topic..."
                 disabled={isDebating}
               />
@@ -152,7 +152,7 @@ export default function DebateApp() {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label htmlFor="rounds" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="rounds" className="block text-sm font-medium text-gray-800 mb-2">
                 Number of Rounds (1-5)
               </label>
               <input
@@ -167,7 +167,7 @@ export default function DebateApp() {
                     setResponseCount(Math.max(1, Math.min(5, value)));
                   }
                 }}
-                className="w-full p-2 border border-gray-300 rounded-md"
+                className="w-full p-2 border border-gray-300 rounded-md text-gray-800"
                 disabled={isDebating}
               />
             </div>
@@ -187,7 +187,7 @@ export default function DebateApp() {
             onClick={startDebate}
             disabled={isDebating || !prompt}
             className={`w-full py-3 px-4 rounded-md text-white font-medium ${
-              isDebating ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+              isDebating ? 'bg-blue-500 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
             } transition flex justify-center items-center`}
           >
             {isDebating ? (
@@ -208,20 +208,26 @@ export default function DebateApp() {
               <div 
                 key={index}
                 className={`p-4 rounded-lg border-l-4 ${
-                  entry.isSurrender ? 'border-yellow-500 bg-yellow-50' :
-                  entry.speaker === 'A' ? 'border-blue-500 bg-blue-50' : 'border-red-500 bg-red-50'
+                  entry.isSurrender ? 'border-yellow-600 bg-yellow-100' :
+                  entry.speaker === 'A' ? 'border-blue-600 bg-blue-100' : 'border-red-600 bg-red-100'
                 }`}
               >
                 <div className="flex justify-between items-start mb-1">
-                  <span className="font-medium text-sm">
+                  <span className={`font-medium text-sm ${
+                    entry.isSurrender ? 'text-yellow-800' :
+                    entry.speaker === 'A' ? 'text-blue-800' : 'text-red-800'
+                  }`}>
                     {entry.speaker === 'A' ? 'PRO Side' : 'CON Side'}
                     {entry.isSurrender && ' (Conceded)'}
                   </span>
-                  <span className="text-xs text-gray-500">
+                  <span className="text-xs text-gray-600">
                     Round {entry.round} of {responseCount}
                   </span>
                 </div>
-                <p className="whitespace-pre-wrap">{entry.text}</p>
+                <p className={`whitespace-pre-wrap ${
+                  entry.isSurrender ? 'text-yellow-900' :
+                  entry.speaker === 'A' ? 'text-blue-900' : 'text-red-900'
+                }`}>{entry.text}</p>
               </div>
             ))}
           </div>
