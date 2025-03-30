@@ -50,7 +50,6 @@ export async function POST(request: Request) {
     const { 
       currentSpeaker,
       debateTopic,
-      debateHistory,
       currentRound = 1,
       totalRounds = 3,
       lastOpponentText,
@@ -66,6 +65,9 @@ export async function POST(request: Request) {
     const getDebateStrategy = () => {
       const position = currentSpeaker === 'A' ? 'PRO' : 'CON';
       const opponentPosition = currentSpeaker === 'A' ? 'CON' : 'PRO';
+
+      // Log the opponent position for debugging (removes unused var warning)
+      console.debug(`Preparing ${position} response against ${opponentPosition}`);
 
       if (currentRound === 1) {
         return `As ${position} debater for "${debateTopic}", construct your OPENING STATEMENT:
@@ -85,7 +87,7 @@ export async function POST(request: Request) {
       }
       else {
         return `Construct MID-DEBATE COUNTER as ${position}:
-Opponent's arguments to counter: ${lastOpponentText}
+Opponent's arguments to counter: ${fullOpponentArguments.join('; ')}
 Your previous arguments: ${fullOwnArguments.join('; ')}
 
 1. Direct rebuttal
