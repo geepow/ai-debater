@@ -1,12 +1,15 @@
 import { NextResponse } from 'next/server';
 
-interface ChatMessage {
-  role: 'system' | 'user' | 'assistant';
-  content: string;
-}
+// List of available free models with fallback priority
+const FREE_MODELS = [
+  "meta-llama/llama-3-70b-instruct",  // Free on OpenRouter
+  "google/gemma-7b-it",                // Free lightweight model
+  "mistralai/mistral-7b-instruct",     // Good fallback option
+  "anthropic/claude-3-haiku",          // Free tier available
+  "gryphe/mythomax-l2-13b"             // Another free option
+];
 
-interface RequestBody {
-  messages: ChatMessage[];
+interface DebateRequest {
   currentSpeaker: 'A' | 'B';
   debateTopic: string;
   debateHistory: {
@@ -16,177 +19,167 @@ interface RequestBody {
   currentRound: number;
   totalRounds: number;
   lastOpponentText: string;
-  fullOpponentArguments: string[];
-  fullOwnArguments: string[];
+  fullOpponentArguments: string[]; // Track all opponent points
+  fullOwnArguments: string[]; // Track all own points
 }
 
 export async function POST(request: Request) {
-  const SURRENDER_MESSAGES = {
-    A: "I concede the point - your arguments are persuasive.",
-    B: "I yield - your position is stronger in this debate."
-  };
-
-  // Initialize with default values
-  let requestBody: RequestBody = {
-    messages: [],
-    currentSpeaker: 'A',
-    debateTopic: '',
-    debateHistory: [],
-    currentRound: 1,
-    totalRounds: 3,
-    lastOpponentText: '',
-    fullOpponentArguments: [],
-    fullOwnArguments: []
-  };
-
+  // 1. Parse and validate request
+  let requestData: DebateRequest;
   try {
-    // Parse and validate request body
-    const parsedBody = await request.json();
-    requestBody = {
-      ...requestBody,
-      ...parsedBody,
-    };
-    
-    const { 
-      currentSpeaker,
-      debateTopic,
-      currentRound = 1,
-      totalRounds = 3,
-      lastOpponentText,
-      fullOpponentArguments = [],
-      fullOwnArguments = []
-    } = requestBody;
+    requestData = await request.json();
+    if (!requestData.debateTopic || !requestData.currentSpeaker) {
+      throw new Error('Missing required fields');
+    }
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Invalid request format' },
+      { status: 400 }
+    );
+  }
 
-    if (!debateTopic) {
-      throw new Error('Missing debate topic');
+  const {
+    currentSpeaker,
+    debateTopic,
+    debateHistory = [],
+    currentRound = 1,
+    totalRounds = 3,
+    lastOpponentText = '',
+    fullOpponentArguments = [],
+    fullOwnArguments = []
+  } = requestData;
+
+  // 2. Strict role enforcement
+  const isPro = currentSpeaker === 'A';
+  const position = isPro ? 'PRO' : 'CON';
+  const opponentPosition = isPro ? 'CON' : 'PRO';
+
+  // 3. Generate phase-specific instructions with full context
+  const getSystemPrompt = () => {
+    const buildArgumentList = (args: string[]) => 
+      args.map((arg, i) => `${i+1}. ${arg}`).join('\n');
+
+    // Opening statement
+    if (currentRound === 1) {
+      return `You are the ${position} side in a debate about: "${debateTopic}". 
+      Present your OPENING ARGUMENT with:
+      1. Clear position statement
+      2. 2-3 original supporting points
+      3. 1 concrete example
+      4. Confident conclusion
+      (Maintain strict ${position} position, 4-5 sentences)`;
     }
 
-    // Enhanced phased debate strategy using all parameters
-    const getDebateStrategy = () => {
-      const position = currentSpeaker === 'A' ? 'PRO' : 'CON';
-      const opponentPosition = currentSpeaker === 'A' ? 'CON' : 'PRO';
+    // Rebuttal phase - now with full context
+    if (currentRound > 1 && currentRound < totalRounds) {
+      return `You are the ${position} side COUNTERING these ${opponentPosition} arguments:
+      ${buildArgumentList(fullOpponentArguments)}
+      
+      Your previous arguments were:
+      ${buildArgumentList(fullOwnArguments)}
+      
+      Your response MUST:
+      1. Directly counter at least 2 ${opponentPosition} points
+      2. Strengthen 1 of your previous arguments
+      3. Add 1 new supporting point
+      4. Never repeat ${opponentPosition}'s language verbatim
+      5. Use clear opposition markers ("This fails because...", "They overlook...")
+      
+      (4-5 sentences, maintain strict ${position} stance)`;
+    }
 
-      // Log the opponent position for debugging (removes unused var warning)
-      console.debug(`Preparing ${position} response against ${opponentPosition}`);
+    // Closing argument
+    return `You are the ${position} side giving your FINAL ARGUMENT.
+    Opponent's key points:
+    ${buildArgumentList(fullOpponentArguments)}
+    
+    Your key points:
+    ${buildArgumentList(fullOwnArguments)}
+    
+    Your closing MUST:
+    1. Summarize your strongest 2 points
+    2. Identify fatal flaws in 2 opponent arguments
+    3. End with powerful conclusion
+    (3-4 sentences, decisive tone)`;
+  };
 
-      if (currentRound === 1) {
-        return `As ${position} debater for "${debateTopic}", construct your OPENING STATEMENT:
-1. Start with strong thesis clearly ${position === 'PRO' ? 'supporting' : 'opposing'} the topic
-2. Present 2-3 core arguments (numbered)
-3. Include one hypothetical example
-4. Conclude with confident position statement
-5. Keep response to 4-5 sentences`;
-      }
-      else if (currentRound === totalRounds) {
-        return `Give CLOSING ARGUMENT as ${position} side:
-1. Summarize your strongest point from: ${fullOwnArguments.join('; ')}
-2. Identify fatal flaw in opponent's arguments: ${lastOpponentText}
-3. Provide final analogy
-4. End with powerful conclusion
-5. 3-4 sentences maximum`;
-      }
-      else {
-        return `Construct MID-DEBATE COUNTER as ${position}:
-Opponent's arguments to counter: ${fullOpponentArguments.join('; ')}
-Your previous arguments: ${fullOwnArguments.join('; ')}
-
-1. Direct rebuttal
-2. Point out logical weakness
-3. Add one new supporting point
-4. Connect back to core position
-5. Use transitional phrases ("This fails because...", "More importantly...")
-6. 3-5 sentences maximum`;
-      }
-    };
-
+  // 4. API Call with strict context enforcement
+  try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000); // 25s timeout
+    setTimeout(() => controller.abort(), 25000); // 25s timeout
 
-    const apiResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
       signal: controller.signal,
       headers: {
         'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-        'HTTP-Referer': process.env.VERCEL_URL || 'http://localhost:3000',
-        'X-Title': 'AI Debate Arena'
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
+    //    model: "anthropic/claude-3-sonnet", 
+        model: "deepseek/deepseek-chat-v3-0324", 
         messages: [{
           role: "system",
-          content: getDebateStrategy()
-        }, ...requestBody.messages],
+          content: getSystemPrompt()
+        }],
         max_tokens: 350,
         temperature: 0.7,
-        top_p: 0.85
+        response_format: { type: "text" }
       })
     });
-    clearTimeout(timeout);
 
-    if (!apiResponse.ok) {
-      const errorText = await apiResponse.text();
-      console.error('API Error:', apiResponse.status, errorText);
-      throw new Error(`API responded with status ${apiResponse.status}`);
-    }
+    if (!response.ok) throw new Error(`API error: ${response.status}`);
 
-    const data = await apiResponse.json();
+    const data = await response.json();
     let aiResponse = data.choices?.[0]?.message?.content?.trim();
     
-    if (!aiResponse) throw new Error('Empty response from AI');
+    if (!aiResponse) throw new Error('Empty response');
 
-    // Post-processing for debate quality
-    aiResponse = polishDebateResponse(aiResponse, currentSpeaker, currentRound, totalRounds);
+    // 5. Strict response validation and formatting
+    aiResponse = aiResponse
+      .replace(new RegExp(`^${position}:?\\s*`, 'i'), '')
+      .trim();
+
+    // Ensure proper opposition in rebuttals
+    if (currentRound > 1 && currentRound < totalRounds) {
+      const oppositionMarkers = [
+        'however', 'but', 'fail', 'flaw', 'overlook', 
+        'counter', 'misunderstand', 'ignore', 'contradict'
+      ];
+      if (!oppositionMarkers.some(m => aiResponse.toLowerCase().includes(m))) {
+        aiResponse = `However, ${aiResponse.toLowerCase()}`;
+      }
+    }
+
+    // Ensure proper closing structure
+    if (currentRound === totalRounds) {
+      if (!aiResponse.toLowerCase().startsWith('in conclusion') && 
+          !aiResponse.toLowerCase().startsWith('therefore')) {
+        aiResponse = `In conclusion, ${aiResponse.toLowerCase()}`;
+      }
+    }
+
+    if (!/[.!?]$/.test(aiResponse)) {
+      aiResponse += currentRound === totalRounds ? '!' : '.';
+    }
 
     return NextResponse.json({
       success: true,
-      response: aiResponse,
+      response: aiResponse.charAt(0).toUpperCase() + aiResponse.slice(1),
       speaker: currentSpeaker,
-      role: currentSpeaker === 'A' ? 'PRO' : 'CON'
+      role: position
     });
 
-  } catch (err) {
-    console.error('Debate error:', err);
-    const currentSpeaker = requestBody.currentSpeaker;
+  } catch (error) {
+    console.error('Debate error:', error);
     return NextResponse.json({
       success: false,
-      response: SURRENDER_MESSAGES[currentSpeaker],
+      response: isPro 
+        ? "I concede - your arguments are persuasive." 
+        : "I yield - your position is stronger.",
       isSurrender: true,
       speaker: currentSpeaker,
-      role: currentSpeaker === 'A' ? 'PRO' : 'CON'
+      role: position
     }, { status: 500 });
   }
-}
-
-// Enhanced response polishing
-function polishDebateResponse(
-  text: string, 
-  speaker: 'A' | 'B',
-  currentRound: number,
-  totalRounds: number
-): string {
-  const position = speaker === 'A' ? 'PRO' : 'CON';
-  
-  // Remove any role prefixes
-  let cleaned = text.replace(new RegExp(`^${position}:?\\s*`, 'i'), '').trim();
-
-  // Ensure proper sentence structure
-  if (!/[.!?]$/.test(cleaned)) {
-    cleaned += currentRound === totalRounds ? '!' : '.';
-  }
-
-  // Capitalize and add round-appropriate emphasis
-  cleaned = cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
-  
-  if (currentRound === 1) {
-    cleaned = cleaned.replace(/(first|second|third)(ly)?/gi, match => 
-      match.charAt(0).toUpperCase() + match.slice(1));
-  }
-  else if (currentRound === totalRounds) {
-    if (!cleaned.startsWith('Therefore') && !cleaned.startsWith('Thus')) {
-      cleaned = `Therefore, ${cleaned.toLowerCase()}`;
-    }
-  }
-
-  return cleaned;
 }
